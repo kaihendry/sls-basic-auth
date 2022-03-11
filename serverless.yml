@@ -1,0 +1,37 @@
+service: sls-basic-auth
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: ap-southeast-1
+  environment:
+    AUTH_USERNAME: admin
+    AUTH_PASSWORD: secret
+
+functions:
+  basicAuth:
+    handler: auth.handler
+  hello:
+    handler: hello.handler
+    events:
+      - http:
+          method: any
+          path: /
+          authorizer:
+            name: basicAuth
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: request
+
+resources:
+  Resources:
+    GatewayResponse:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.WWW-Authenticate: "'Basic'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        StatusCode: "401"
